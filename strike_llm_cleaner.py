@@ -91,6 +91,9 @@ def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str) -
     if not response:
         return year
     
+    # Print the exact OpenAI response for debugging
+    print(f"    🔍 OpenAI date response: '{response}'")
+    
     # Parse the response
     try:
         if response.upper() == 'UNKNOWN':
@@ -149,6 +152,13 @@ Don't write any scripts, just read it. Don't write any accompanying texts like '
     if not response:
         return []
     
+    # Print the exact OpenAI response for debugging
+    print(f"    🔍 OpenAI strikes response (first 500 chars): '{response[:500]}...'")
+    print(f"    🔍 Full OpenAI strikes response:")
+    print(f"    =====================================")
+    print(response)
+    print(f"    =====================================")
+    
     # Try to parse JSON response
     try:
         # Clean the response - remove any markdown formatting
@@ -158,6 +168,8 @@ Don't write any scripts, just read it. Don't write any accompanying texts like '
         if clean_response.endswith('```'):
             clean_response = clean_response[:-3]
         clean_response = clean_response.strip()
+        
+        print(f"    🔍 Cleaned response for JSON parsing: '{clean_response[:200]}...'")
         
         # Parse JSON
         strikes_data = json.loads(clean_response)
