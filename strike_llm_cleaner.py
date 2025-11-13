@@ -55,7 +55,7 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
                 model=OPENAI_MODEL,
                 messages=messages,
                 temperature=0.1,  # Low temperature for consistent results
-                max_tokens=4000
+                max_completion_tokens=4000
             )
             return response.choices[0].message.content.strip()
         
