@@ -118,10 +118,10 @@ def find_toke_munka_subtitle(shapes: List[Dict]) -> Optional[Dict]:
     return None
 
 
-def find_szeles_cim(shapes: List[Dict]) -> Optional[str]:
-    """Find and extract text from szeles_cim element (newspaper header)."""
+def find_oldalfejlec(shapes: List[Dict]) -> Optional[str]:
+    """Find and extract text from oldalfejlec element (newspaper header)."""
     for shape in shapes:
-        if shape.get("label") == "szeles_cim":
+        if shape.get("label") == "oldalfejlec":
             text = extract_text_from_shape(shape)
             if text:
                 print(f"    📰 Found newspaper header: {text[:50]}...")
@@ -132,7 +132,7 @@ def find_szeles_cim(shapes: List[Dict]) -> Optional[str]:
 def get_next_stopping_point(current_file_index: int, current_column: int, current_row: int, 
                            all_pairs: List[Tuple[str, str]]) -> Tuple[Optional[int], Optional[int], Optional[int]]:
     """
-    Find the next hasabkozi_cim or szeles_cim that should stop the collection.
+    Find the next hasabkozi_cim or oldalfejlec that should stop the collection.
     Returns (file_index, column, row) or (None, None, None) if not found.
     """
     # Start from current position
@@ -148,7 +148,7 @@ def get_next_stopping_point(current_file_index: int, current_column: int, curren
             # Get elements with column and row info, sorted by reading order
             elements = []
             for shape in shapes:
-                if (shape.get("label") in ["hasabkozi_cim", "szeles_cim", "szoveg"] and 
+                if (shape.get("label") in ["hasabkozi_cim", "oldalfejlec", "szoveg"] and 
                     "column_number" in shape and "row_number" in shape):
                     elements.append(shape)
             
@@ -167,8 +167,8 @@ def get_next_stopping_point(current_file_index: int, current_column: int, curren
                     continue
                 
                 # Check if this is a stopping point
-                if elem_label == "szeles_cim":
-                    print(f"    🛑 Found stopping point: szeles_cim at file {file_idx}, col {elem_col}, row {elem_row}")
+                if elem_label == "oldalfejlec":
+                    print(f"    🛑 Found stopping point: oldalfejlec at file {file_idx}, col {elem_col}, row {elem_row}")
                     return file_idx, elem_col, elem_row
                 elif elem_label == "hasabkozi_cim":
                     text = extract_text_from_shape(element)
@@ -297,9 +297,9 @@ def process_files(all_pairs: List[Tuple[str, str]], input_folder: str, output_fo
                 continue
             
             # Find newspaper header
-            newspaper_header = find_szeles_cim(shapes)
+            newspaper_header = find_oldalfejlec(shapes)
             if not newspaper_header:
-                print(f"    ⚠️  No newspaper header (szeles_cim) found")
+                print(f"    ⚠️  No newspaper header (oldalfejlec) found")
                 newspaper_header = "Unknown Issue"
             
             # Collect column content
@@ -348,7 +348,7 @@ def main():
         print("OCR results and extracts the complete column content.")
         print("\nFeatures:")
         print("- Searches for hasabkozi_cim containing 'tőke' and 'munka' (case insensitive)")
-        print("- Extracts newspaper header (szeles_cim) from the same page")
+        print("- Extracts newspaper header (oldalfejlec) from the same page")
         print("- Collects content following document structure until next subtitle/header")
         print("- Outputs individual JSON files for each found column")
         sys.exit(1)
