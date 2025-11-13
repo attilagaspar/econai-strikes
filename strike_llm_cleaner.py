@@ -280,10 +280,14 @@ def process_file(client: OpenAI, input_path: str, output_path: str, input_folder
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python strike_llm_cleaner.py <input_folder> <output_folder>")
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print("Usage: python strike_llm_cleaner.py <input_folder> <output_folder> [--force]")
         print("\nThis script processes JSON files from raw_strike_description_collector.py")
         print("and uses OpenAI API to extract structured strike data.")
+        print("\nArguments:")
+        print("  input_folder   - Folder containing JSON files from the collector script")
+        print("  output_folder  - Folder where processed JSON files will be saved")
+        print("  --force        - Optional: Force reprocessing of files that already exist")
         print("\nRequirements:")
         print("- OPENAI_API_KEY environment variable must be set")
         print("- Input folder should contain JSON files from the collector script")
@@ -291,10 +295,12 @@ def main():
         print("- Extracts publication dates from newspaper headers")
         print("- Identifies and structures strike information")
         print("- Generates detailed JSON output with metadata")
+        print("- Skips files that already have output (unless --force is used)")
         sys.exit(1)
     
     input_folder = sys.argv[1]
     output_folder = sys.argv[2]
+    force_reprocess = len(sys.argv) == 4 and sys.argv[3] == "--force"
     
     # Validate input
     if not os.path.exists(input_folder):
@@ -308,6 +314,7 @@ def main():
     print(f"📁 Input folder: {input_folder}")
     print(f"📁 Output folder: {output_folder}")
     print(f"🤖 OpenAI model: {OPENAI_MODEL}")
+    print(f"🔄 Force reprocessing: {'Yes' if force_reprocess else 'No (will skip existing files)'}")
     
     # Setup OpenAI client
     try:
@@ -334,6 +341,7 @@ def main():
     # Process all files
     print(f"\n📋 Processing {len(json_files)} JSON files...")
     processed_count = 0
+    skipped_count = 0
     total_strikes = 0
     
     for i, input_path in enumerate(json_files):
@@ -343,6 +351,20 @@ def main():
         input_filename = os.path.basename(input_path)
         output_filename = generate_output_filename(input_filename)
         output_path = os.path.join(output_folder, output_filename)
+        
+        # Check if output file already exists
+        if os.path.exists(output_path) and not force_reprocess:
+            print(f"    ⏭️  Skipping: {input_filename} (output already exists)")
+            skipped_count += 1
+            
+            # Still count strikes in existing output file for final summary
+            try:
+                with open(output_path, 'r', encoding='utf-8') as f:
+                    output_data = json.load(f)
+                total_strikes += len(output_data.get("strikes", []))
+            except:
+                pass
+            continue
         
         # Process the file
         if process_file(client, input_path, output_path, input_folder):
@@ -359,13 +381,18 @@ def main():
     # Final summary
     print(f"\n{'='*80}")
     print(f"🎉 Processing complete!")
-    print(f"✅ Successfully processed: {processed_count}/{len(json_files)} files")
-    print(f"📊 Total strikes extracted: {total_strikes}")
+    print(f"✅ Successfully processed: {processed_count} files")
+    print(f"⏭️  Skipped (already exist): {skipped_count} files")
+    print(f"📊 Total files: {len(json_files)}")
+    print(f"📊 Total strikes in all output: {total_strikes}")
     print(f"📁 Output files saved to: {output_folder}")
     
-    if processed_count == 0:
-        print("⚠️  No files were successfully processed.")
+    if processed_count == 0 and skipped_count == 0:
+        print("⚠️  No files were processed.")
         print("   Check the input files and OpenAI API configuration.")
+    elif processed_count == 0 and skipped_count > 0:
+        print("ℹ️  All files were skipped (output already exists).")
+        print("   Use --force argument to reprocess existing files.")
 
 
 if __name__ == "__main__":
