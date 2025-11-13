@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import re
+import argparse
 from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -90,7 +91,7 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], model: str, ma
     return None
 
 
-def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str) -> str:
+def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str, model: str) -> str:
     """Extract date information from newspaper header using OpenAI."""
     if newspaper_header == "Unknown Issue":
         return year
@@ -108,7 +109,7 @@ def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str) -
         }
     ]
     
-    response = query_openai_with_retry(client, messages, OPENAI_DATE_MODEL)
+    response = query_openai_with_retry(client, messages, model)
     if not response:
         return year
     
@@ -139,7 +140,7 @@ def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str) -
     return year
 
 
-def extract_strikes_from_content(client: OpenAI, column_content: str) -> List[Dict]:
+def extract_strikes_from_content(client: OpenAI, column_content: str, model: str) -> List[Dict]:
     """Extract structured strike data from column content using OpenAI."""
     print(f"    📊 Analyzing content for strikes ({len(column_content)} characters)...")
     print(f"    📝 Content preview: {column_content[:200]}...")
@@ -170,7 +171,7 @@ Don't write any scripts, just read it. Don't write any accompanying texts like '
         }
     ]
     
-    response = query_openai_with_retry(client, messages, OPENAI_STRIKES_MODEL)
+    response = query_openai_with_retry(client, messages, model)
     if not response:
         return []
     
@@ -223,7 +224,7 @@ def generate_output_filename(input_filename: str) -> str:
     return f"{base_name}_strikes.json"
 
 
-def process_file(client: OpenAI, input_path: str, output_path: str, input_folder: str) -> bool:
+def process_file(client: OpenAI, input_path: str, output_path: str, input_folder: str, date_model: str, strikes_model: str) -> bool:
     """Process a single JSON file and extract strike data."""
     filename = os.path.basename(input_path)
     print(f"    📄 Processing: {filename}")
@@ -248,10 +249,10 @@ def process_file(client: OpenAI, input_path: str, output_path: str, input_folder
             return False
         
         # Extract publication date
-        publication_date = extract_date_from_header(client, newspaper_header, year)
+        publication_date = extract_date_from_header(client, newspaper_header, year, date_model)
         
         # Extract strikes from content
-        strikes = extract_strikes_from_content(client, column_content)
+        strikes = extract_strikes_from_content(client, column_content, strikes_model)
         
         # Prepare output data
         output_data = {
@@ -264,8 +265,8 @@ def process_file(client: OpenAI, input_path: str, output_path: str, input_folder
                 "extracted_year": year,
                 "total_strikes_found": len(strikes),
                 "processed_at": datetime.now().isoformat(),
-                "openai_date_model_used": OPENAI_DATE_MODEL,
-                "openai_strikes_model_used": OPENAI_STRIKES_MODEL
+                "openai_date_model_used": date_model,
+                "openai_strikes_model_used": strikes_model
             }
         }
         
@@ -281,28 +282,53 @@ def process_file(client: OpenAI, input_path: str, output_path: str, input_folder
         return False
 
 
-def main():
-    if len(sys.argv) < 3 or len(sys.argv) > 4:
-        print("Usage: python strike_llm_cleaner.py <input_folder> <output_folder> [--force]")
-        print("\nThis script processes JSON files from raw_strike_description_collector.py")
-        print("and uses OpenAI API to extract structured strike data.")
-        print("\nArguments:")
-        print("  input_folder   - Folder containing JSON files from the collector script")
-        print("  output_folder  - Folder where processed JSON files will be saved")
-        print("  --force        - Optional: Force reprocessing of files that already exist")
-        print("\nRequirements:")
-        print("- OPENAI_API_KEY environment variable must be set")
-        print("- Input folder should contain JSON files from the collector script")
-        print("\nFeatures:")
-        print("- Extracts publication dates from newspaper headers")
-        print("- Identifies and structures strike information")
-        print("- Generates detailed JSON output with metadata")
-        print("- Skips files that already have output (unless --force is used)")
-        sys.exit(1)
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Process JSON files from raw_strike_description_collector.py and extract structured strike data using OpenAI API.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python strike_llm_cleaner.py input_folder output_folder
+  python strike_llm_cleaner.py input_folder output_folder --force
+  python strike_llm_cleaner.py input_folder output_folder --strikemodel gpt-4o --datemodel gpt-4o-mini
+  python strike_llm_cleaner.py input_folder output_folder --strikemodel gpt-5-nano --datemodel gpt-4o-mini --force
+
+Requirements:
+  - OPENAI_API_KEY environment variable must be set
+  - Input folder should contain JSON files from the collector script
+        """
+    )
     
-    input_folder = sys.argv[1]
-    output_folder = sys.argv[2]
-    force_reprocess = len(sys.argv) == 4 and sys.argv[3] == "--force"
+    # Positive arguments
+    parser.add_argument('input_folder', 
+                       help='Folder containing JSON files from the collector script')
+    parser.add_argument('output_folder', 
+                       help='Folder where processed JSON files will be saved')
+    
+    # Optional arguments
+    parser.add_argument('--force', 
+                       action='store_true',
+                       help='Force reprocessing of files that already exist')
+    parser.add_argument('--strikemodel', 
+                       default=OPENAI_STRIKES_MODEL,
+                       help=f'OpenAI model for strike analysis (default: {OPENAI_STRIKES_MODEL})')
+    parser.add_argument('--datemodel', 
+                       default=OPENAI_DATE_MODEL,
+                       help=f'OpenAI model for date extraction (default: {OPENAI_DATE_MODEL})')
+    
+    return parser.parse_args()
+
+
+def main():
+    # Parse arguments
+    args = parse_arguments()
+    
+    input_folder = args.input_folder
+    output_folder = args.output_folder
+    force_reprocess = args.force
+    date_model = args.datemodel
+    strikes_model = args.strikemodel
     
     # Validate input
     if not os.path.exists(input_folder):
@@ -315,8 +341,8 @@ def main():
     print("🚀 Starting Strike LLM Cleaner...")
     print(f"📁 Input folder: {input_folder}")
     print(f"📁 Output folder: {output_folder}")
-    print(f"🤖 OpenAI date model: {OPENAI_DATE_MODEL}")
-    print(f"🤖 OpenAI strikes model: {OPENAI_STRIKES_MODEL}")
+    print(f"🤖 OpenAI date model: {date_model}")
+    print(f"🤖 OpenAI strikes model: {strikes_model}")
     print(f"🔄 Force reprocessing: {'Yes' if force_reprocess else 'No (will skip existing files)'}")
     
     # Setup OpenAI client
@@ -370,7 +396,7 @@ def main():
             continue
         
         # Process the file
-        if process_file(client, input_path, output_path, input_folder):
+        if process_file(client, input_path, output_path, input_folder, date_model, strikes_model):
             processed_count += 1
             
             # Count strikes in output file

@@ -9,7 +9,7 @@ The pipeline consists of four main scripts that work together to transform raw O
 2. **`raw_strike_description_collector.py`** - Extracts "TŐKE ÉS MUNKA" column content from OCR results
 3. **`strike_llm_cleaner.py`** - Uses OpenAI API to extract structured strike data from the text
 4. **`compile_strike_csv.py`** - Compiles all strike data into a single CSV for analysis
-
++1 **`extract_newspaper_text.py`** - exports newspaper JSONs into a single, continuously readable TXT file (not part of the pipeline but nice to have)
 ## 🔧 Requirements
 
 - Python 3.7+
@@ -62,8 +62,34 @@ python raw_strike_description_collector.py <input_folder> <output_folder>
 Use OpenAI API to analyze the text and extract structured strike information:
 
 ```bash
-python strike_llm_cleaner.py <input_folder> <output_folder> [--force]
+python strike_llm_cleaner.py <input_folder> <output_folder> [options]
 ```
+
+**Basic usage**:
+```bash
+# Use default models
+python strike_llm_cleaner.py input_folder output_folder
+
+# Force reprocessing of existing files
+python strike_llm_cleaner.py input_folder output_folder --force
+```
+
+**Advanced usage with custom models**:
+```bash
+# Specify both models
+python strike_llm_cleaner.py input_folder output_folder --strikemodel gpt-4o --datemodel gpt-4o-mini
+
+# Use different models with force reprocessing
+python strike_llm_cleaner.py input_folder output_folder --strikemodel gpt-5-nano --datemodel gpt-4o-mini --force
+
+# Change only the strike analysis model (date model uses default)
+python strike_llm_cleaner.py input_folder output_folder --strikemodel gpt-4o
+```
+
+**Command Line Options**:
+- `--force` - Force reprocessing of files that already exist
+- `--strikemodel MODEL` - Specify OpenAI model for strike analysis (default: gpt-4.1-mini)
+- `--datemodel MODEL` - Specify OpenAI model for date extraction (default: gpt-4o-mini)
 
 **Input**: Folder containing JSON files from Step 1
 **Output**: JSON files with structured strike data
@@ -72,6 +98,7 @@ python strike_llm_cleaner.py <input_folder> <output_folder> [--force]
 - Extracts publication dates from newspaper headers
 - Uses different OpenAI models for date extraction and strike analysis
 - Skips files with existing output (unless `--force` is used)
+- Flexible model selection for cost and accuracy optimization
 - Extracts 11 structured fields for each strike:
   - `event_date` - Strike date in ISO 8601 format
   - `industry_txt` - Industry description
@@ -106,18 +133,39 @@ python compile_strike_csv.py <input_folder> <output_csv_file>
 
 ### OpenAI Models
 
-You can configure different models for different tasks in `strike_llm_cleaner.py`:
+You can configure different models for different tasks using command line arguments:
+
+```bash
+# Default models (set in script)
+python strike_llm_cleaner.py input_folder output_folder
+# Uses: gpt-4o-mini for dates, gpt-4.1-mini for strikes
+
+# Custom model configuration
+python strike_llm_cleaner.py input_folder output_folder --datemodel gpt-4o-mini --strikemodel gpt-4o
+```
+
+**Alternative**: You can also modify the default models in `strike_llm_cleaner.py`:
 
 ```python
 # Configuration - Modify these as needed
 OPENAI_DATE_MODEL = "gpt-4o-mini"  # Model for date extraction (simpler task)
-OPENAI_STRIKES_MODEL = "gpt-5-nano"  # Model for strike analysis (complex task)
+OPENAI_STRIKES_MODEL = "gpt-4.1-mini"  # Model for strike analysis (complex task)
 ```
 
-**Recommended configurations**:
-- **Cost-optimized**: `gpt-4o-mini` for both tasks
-- **Accuracy-optimized**: `gpt-5-nano` or `gpt-4o` for strike analysis
-- **Balanced**: `gpt-4o-mini` for dates, `gpt-5-nano` for strikes
+**Recommended model combinations**:
+
+| Use Case | Date Model | Strike Model | Command |
+|----------|------------|--------------|---------|
+| **Cost-optimized** | gpt-4o-mini | gpt-4o-mini | `--datemodel gpt-4o-mini --strikemodel gpt-4o-mini` |
+| **Balanced** | gpt-4o-mini | gpt-4o | `--datemodel gpt-4o-mini --strikemodel gpt-4o` |
+| **Accuracy-focused** | gpt-4o | gpt-5-nano | `--datemodel gpt-4o --strikemodel gpt-5-nano` |
+| **Development/Testing** | gpt-4o-mini | gpt-4o-mini | `--datemodel gpt-4o-mini --strikemodel gpt-4o-mini` |
+
+**Model Selection Tips**:
+- **Date extraction** is simpler - cheaper models like `gpt-4o-mini` work well
+- **Strike analysis** is complex - consider `gpt-4o` or `gpt-5-nano` for better accuracy
+- **Reasoning models** like `gpt-5-nano` may need higher token limits but provide better analysis
+- **Cost vs Accuracy**: Start with cheaper models and upgrade for critical fields
 
 ## 📊 Output Format
 
@@ -144,11 +192,46 @@ econai-strikes/
 
 ## 🔍 Example Workflow
 
+### Complete Example with Custom Models
+
+```bash
+# Step 1: Extract column content from OCR results
+python raw_strike_description_collector.py newspaper_ocr_folder extracted_columns
+
+# Step 2: Extract structured strike data with optimized models
+python strike_llm_cleaner.py extracted_columns structured_strikes --datemodel gpt-4o-mini --strikemodel gpt-4o
+
+# Step 3: Compile all strikes into a CSV database
+python compile_strike_csv.py structured_strikes final_strike_database.csv
+```
+
+### Step-by-Step Process
+
 1. **Prepare OCR data**: Ensure your newspaper OCR results are in JSON format with proper structure
-2. **Extract columns**: Run `raw_strike_description_collector.py` to extract "TŐKE ÉS MUNKA" content
-3. **Process with AI**: Run `strike_llm_cleaner.py` to extract structured strike data
-4. **Compile results**: Run `compile_strike_csv.py` to create the final database
-5. **Analyze**: Use the CSV file for statistical analysis, visualization, or further research
+
+2. **Extract columns**: 
+   ```bash
+   python raw_strike_description_collector.py input_ocr_folder column_extracts
+   ```
+
+3. **Process with AI** (choose your approach):
+   ```bash
+   # Quick/cheap processing
+   python strike_llm_cleaner.py column_extracts processed_strikes --strikemodel gpt-4o-mini
+   
+   # Balanced processing (recommended)
+   python strike_llm_cleaner.py column_extracts processed_strikes --datemodel gpt-4o-mini --strikemodel gpt-4o
+   
+   # High-accuracy processing
+   python strike_llm_cleaner.py column_extracts processed_strikes --datemodel gpt-4o --strikemodel gpt-5-nano
+   ```
+
+4. **Compile results**: 
+   ```bash
+   python compile_strike_csv.py processed_strikes historical_strikes.csv
+   ```
+
+5. **Analyze**: Use `historical_strikes.csv` for statistical analysis, visualization, or further research
 
 ## 🐛 Troubleshooting
 
