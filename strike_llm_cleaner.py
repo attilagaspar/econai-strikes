@@ -49,6 +49,8 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
     """Query OpenAI API with retry logic."""
     import time
     
+    print(f"    🔄 Making OpenAI API call with model: {OPENAI_MODEL}")
+    
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
@@ -56,7 +58,9 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
                 messages=messages,
                 max_completion_tokens=4000
             )
-            return response.choices[0].message.content.strip()
+            result = response.choices[0].message.content.strip()
+            print(f"    ✅ OpenAI API call successful, response length: {len(result)} characters")
+            return result
         
         except Exception as e:
             print(f"    ⚠️  OpenAI API error (attempt {attempt + 1}/{max_retries}): {e}")
@@ -121,6 +125,7 @@ def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str) -
 def extract_strikes_from_content(client: OpenAI, column_content: str) -> List[Dict]:
     """Extract structured strike data from column content using OpenAI."""
     print(f"    📊 Analyzing content for strikes ({len(column_content)} characters)...")
+    print(f"    📝 Content preview: {column_content[:200]}...")
     
     strike_prompt = """I am sending you a text from the "NÉPSZAVA" labor journal from the early 20th century. Please read and digest it. Please check if there were strikes. If there were strikes, return a list of them as structured JSON elements, with the following informations/elements.
 1) "event_date" - exact date in ISO 8601 format
