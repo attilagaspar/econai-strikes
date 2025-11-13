@@ -50,6 +50,9 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
     import time
     
     print(f"    🔄 Making OpenAI API call with model: {OPENAI_MODEL}")
+    print(f"    📝 Number of messages: {len(messages)}")
+    for i, msg in enumerate(messages):
+        print(f"    📝 Message {i+1} ({msg['role']}): {msg['content'][:100]}...")
     
     for attempt in range(max_retries):
         try:
@@ -58,8 +61,21 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
                 messages=messages,
                 max_completion_tokens=4000
             )
-            result = response.choices[0].message.content.strip()
+            result = response.choices[0].message.content
+            if result is None:
+                print(f"    ⚠️  OpenAI returned None as content")
+                return None
+            
+            result = result.strip()
             print(f"    ✅ OpenAI API call successful, response length: {len(result)} characters")
+            
+            if len(result) == 0:
+                print(f"    ⚠️  OpenAI returned empty response!")
+                print(f"    🔍 Full response object: {response}")
+                print(f"    🔍 Message content was: '{response.choices[0].message.content}'")
+                print(f"    🔍 Finish reason: {response.choices[0].finish_reason}")
+                return None
+            
             return result
         
         except Exception as e:
