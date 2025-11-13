@@ -19,7 +19,7 @@ import openai
 from openai import OpenAI
 
 # Configuration - Modify these as needed
-OPENAI_MODEL = "gpt-5-nano"  # You can change this to "gpt-3.5-turbo" or other models
+OPENAI_MODEL = "gpt-5"  # You can change this to "gpt-3.5-turbo" or other models
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
