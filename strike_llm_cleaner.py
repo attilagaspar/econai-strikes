@@ -20,7 +20,7 @@ from openai import OpenAI
 
 # Configuration - Modify these as needed
 OPENAI_DATE_MODEL = "gpt-4o-mini"  # Model for date extraction (simpler task)
-OPENAI_STRIKES_MODEL = "gpt-5"  # Model for strike analysis (complex task)
+OPENAI_STRIKES_MODEL = "gpt-4.1-mini"  # Model for strike analysis (complex task)
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
