@@ -1,0 +1,33 @@
+# EconAI Strikes - Python Dependencies
+
+# Core dependencies for all scripts
+pathlib
+
+# OpenAI API integration (for strike_llm_cleaner.py)
+openai>=1.0.0
+
+# JSON and CSV processing (built-in modules)
+# json - built-in
+# csv - built-in
+# os - built-in
+# sys - built-in
+# re - built-in
+
+# Text processing and Unicode handling (built-in)
+# unicodedata - built-in
+
+# Date and time handling (built-in)
+# datetime - built-in
+
+# Type hints (built-in in Python 3.5+)
+# typing - built-in
+
+# Optional: For enhanced debugging and development
+# requests  # If you need to make additional HTTP requests
+# pandas    # If you want to do advanced CSV processing
+# numpy     # If you need numerical operations
+
+# Development and testing (optional)
+# pytest    # For unit testing
+# black     # For code formatting
+# flake8    # For code linting
