@@ -59,7 +59,7 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
             response = client.chat.completions.create(
                 model=OPENAI_MODEL,
                 messages=messages,
-                max_completion_tokens=4000
+                max_completion_tokens=10000
             )
             result = response.choices[0].message.content
             if result is None:
@@ -161,11 +161,11 @@ Don't write any scripts, just read it. Don't write any accompanying texts like '
     messages = [
         {
             "role": "system",
-            "content": "You are analyzing Hungarian labor newspaper content from the early 20th century to extract strike information. Return only valid JSON arrays with strike data, or an empty array if no strikes are found."
+            "content": "You are analyzing Hungarian labor newspaper content from the early 20th century to extract strike information. You MUST return a valid JSON array. If you find strikes, return them as structured JSON elements. If you find no strikes, return an empty array []. Do not return any other text, explanations, or markdown formatting - only the JSON array."
         },
         {
             "role": "user",
-            "content": f"{strike_prompt}\n\nText to analyze:\n{column_content}"
+            "content": f"{strike_prompt}\n\nText to analyze:\n{column_content}\n\nIMPORTANT: You must respond with a JSON array. If no strikes are found, respond with: []"
         }
     ]
     
