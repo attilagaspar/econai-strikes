@@ -19,7 +19,8 @@ import openai
 from openai import OpenAI
 
 # Configuration - Modify these as needed
-OPENAI_MODEL = "gpt-5"  # You can change this to "gpt-3.5-turbo" or other models
+OPENAI_DATE_MODEL = "gpt-4o-mini"  # Model for date extraction (simpler task)
+OPENAI_STRIKES_MODEL = "gpt-5-nano"  # Model for strike analysis (complex task)
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
@@ -45,11 +46,11 @@ def extract_year_from_filename(filename: str) -> Optional[str]:
     return None
 
 
-def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: int = MAX_RETRIES) -> Optional[str]:
+def query_openai_with_retry(client: OpenAI, messages: List[Dict], model: str, max_retries: int = MAX_RETRIES) -> Optional[str]:
     """Query OpenAI API with retry logic."""
     import time
     
-    print(f"    🔄 Making OpenAI API call with model: {OPENAI_MODEL}")
+    print(f"    🔄 Making OpenAI API call with model: {model}")
     print(f"    📝 Number of messages: {len(messages)}")
     for i, msg in enumerate(messages):
         print(f"    📝 Message {i+1} ({msg['role']}): {msg['content'][:100]}...")
@@ -57,9 +58,9 @@ def query_openai_with_retry(client: OpenAI, messages: List[Dict], max_retries: i
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
-                model=OPENAI_MODEL,
+                model=model,
                 messages=messages,
-                max_completion_tokens=10000
+                max_completion_tokens=8000
             )
             result = response.choices[0].message.content
             if result is None:
@@ -107,7 +108,7 @@ def extract_date_from_header(client: OpenAI, newspaper_header: str, year: str) -
         }
     ]
     
-    response = query_openai_with_retry(client, messages)
+    response = query_openai_with_retry(client, messages, OPENAI_DATE_MODEL)
     if not response:
         return year
     
@@ -169,7 +170,7 @@ Don't write any scripts, just read it. Don't write any accompanying texts like '
         }
     ]
     
-    response = query_openai_with_retry(client, messages)
+    response = query_openai_with_retry(client, messages, OPENAI_STRIKES_MODEL)
     if not response:
         return []
     
@@ -263,7 +264,8 @@ def process_file(client: OpenAI, input_path: str, output_path: str, input_folder
                 "extracted_year": year,
                 "total_strikes_found": len(strikes),
                 "processed_at": datetime.now().isoformat(),
-                "openai_model_used": OPENAI_MODEL
+                "openai_date_model_used": OPENAI_DATE_MODEL,
+                "openai_strikes_model_used": OPENAI_STRIKES_MODEL
             }
         }
         
@@ -313,7 +315,8 @@ def main():
     print("🚀 Starting Strike LLM Cleaner...")
     print(f"📁 Input folder: {input_folder}")
     print(f"📁 Output folder: {output_folder}")
-    print(f"🤖 OpenAI model: {OPENAI_MODEL}")
+    print(f"🤖 OpenAI date model: {OPENAI_DATE_MODEL}")
+    print(f"🤖 OpenAI strikes model: {OPENAI_STRIKES_MODEL}")
     print(f"🔄 Force reprocessing: {'Yes' if force_reprocess else 'No (will skip existing files)'}")
     
     # Setup OpenAI client
