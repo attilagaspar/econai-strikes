@@ -98,13 +98,13 @@ def contains_toke_munka(text: str) -> bool:
     normalized = normalize_text_for_search(text)
     
     # Check for various forms of the words
-    toke_variants = ["tőke", "toke", "töke", "tõke", "tóke"]
-    munka_variants = ["munka"]
+    toke_variants = ["tőke", "toke", "töke", "tõke", "földm", "főldm", "foldm", "fõldm"]
+    #munka_variants = ["munka"]
     
     has_toke = any(variant in normalized for variant in toke_variants)
-    has_munka = any(variant in normalized for variant in munka_variants)
+    #has_munka = any(variant in normalized for variant in munka_variants)
     
-    return has_toke and has_munka
+    return has_toke #and has_munka
 
 
 def find_toke_munka_subtitle(shapes: List[Dict]) -> Optional[Dict]:
