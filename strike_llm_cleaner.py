@@ -37,9 +37,9 @@ def setup_openai_client() -> OpenAI:
 
 
 def extract_year_from_filename(filename: str) -> Optional[str]:
-    """Extract year from filename like 'toke_munka_Nepszava_1903_05__pages51-96_images_page_36.json'."""
-    # Pattern: toke_munka_Nepszava_YYYY_
-    match = re.search(r'toke_munka_Nepszava_(\d{4})_', filename)
+    """Extract year from filename like 'toke_munka_n07_Nepszava_1907_08__pages51-100_images_page_24.json'."""
+    # Pattern: toke_munka_n##_Nepszava_YYYY_
+    match = re.search(r'toke_munka_n\d{2}_Nepszava_(\d{4})_', filename)
     if match:
         return match.group(1)
     
