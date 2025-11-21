@@ -6,12 +6,18 @@ pathlib
 # OpenAI API integration (for strike_llm_cleaner.py)
 openai>=1.0.0
 
+# Data processing and mapping (for strike_map_generator.py)
+pandas>=1.3.0
+folium>=0.12.0
+requests>=2.25.0
+
 # JSON and CSV processing (built-in modules)
 # json - built-in
 # csv - built-in
 # os - built-in
 # sys - built-in
 # re - built-in
+# sqlite3 - built-in
 
 # Text processing and Unicode handling (built-in)
 # unicodedata - built-in
@@ -23,9 +29,8 @@ openai>=1.0.0
 # typing - built-in
 
 # Optional: For enhanced debugging and development
-# requests  # If you need to make additional HTTP requests
-# pandas    # If you want to do advanced CSV processing
-# numpy     # If you need numerical operations
+# requests  # Already included above for mapping
+# numpy     # Usually comes with pandas
 
 # Development and testing (optional)
 # pytest    # For unit testing

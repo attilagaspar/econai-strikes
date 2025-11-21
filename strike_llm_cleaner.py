@@ -152,9 +152,9 @@ def extract_strikes_from_content(client: OpenAI, column_content: str, model: str
 4) "participants_txt" - who were the participants (in plain words)
 5) "participants_ISCO" - participant ISCO code, if possible
 6) "firm_name" - which is the firm where the strike happens, or whose estate (if it is an agricultural strike)
-7) "location_txt" - which is the location of the strike – as described there
-8) "location_official" - current official name of the closest settlement
-9) "location_geonames_id" - GeoNames ID of the closest settlement 
+7) "location_txt" - which is the location of the strike – as described there. If more, list them all as a well formatted list [a,b,c].
+8) "location_official" - current official name of the closest settlement. If there is more, list them all as a well formatted list [a,b,c].
+9) "location_geonames_id" - GeoNames ID of the closest settlement. If there are multiple locations, list all IDs as a well formatted list [a,b,c]. 
 10) "strike_status" - is the strike planned/ongoing/resolved
 11) "description_en" - at most 30 word description of the event in English
 
