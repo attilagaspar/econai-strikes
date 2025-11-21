@@ -59,18 +59,70 @@ def extract_strikes_from_json(json_path: str) -> List[Dict[str, Any]]:
         # Get strikes array
         strikes = data.get("strikes", [])
         
-        # Add metadata to each strike
+        # Add metadata to each strike and handle location lists
         enriched_strikes = []
         for strike in strikes:
             if isinstance(strike, dict):
-                # Create a new strike dict with added metadata
-                enriched_strike = {
+                # Create base strike dict with metadata
+                base_strike = {
                     "publication_date": publication_date,
                     "source_file": source_file,
                     "newspaper_header": newspaper_header,
-                    **strike  # Add all original strike fields
                 }
-                enriched_strikes.append(enriched_strike)
+                
+                # Check if any location fields are lists
+                location_fields = ['location_txt', 'location_official', 'location_geonames_id']
+                has_location_list = False
+                max_locations = 1
+                
+                for field in location_fields:
+                    if field in strike and isinstance(strike[field], list):
+                        has_location_list = True
+                        max_locations = max(max_locations, len(strike[field]))
+                        break
+                
+                if has_location_list:
+                    # Create multiple rows - one for each location
+                    print(f"    📍 Found location list with {max_locations} entries")
+                    
+                    for i in range(max_locations):
+                        # Start with base strike data
+                        enriched_strike = base_strike.copy()
+                        
+                        # Add all non-location fields
+                        for key, value in strike.items():
+                            if key not in location_fields:
+                                enriched_strike[key] = value
+                        
+                        # Add location fields - use list index or single value
+                        for field in location_fields:
+                            if field in strike:
+                                if isinstance(strike[field], list):
+                                    # Use the i-th element if it exists, otherwise empty string
+                                    if i < len(strike[field]):
+                                        enriched_strike[field] = strike[field][i]
+                                    else:
+                                        enriched_strike[field] = ""
+                                else:
+                                    # Single value - use for all rows
+                                    enriched_strike[field] = strike[field]
+                            else:
+                                enriched_strike[field] = ""
+                        
+                        # Add a location index to track which entry this is
+                        enriched_strike["location_index"] = i + 1
+                        enriched_strike["total_locations"] = max_locations
+                        
+                        enriched_strikes.append(enriched_strike)
+                else:
+                    # No location lists - create single row as before
+                    enriched_strike = {
+                        **base_strike,
+                        **strike,  # Add all original strike fields
+                        "location_index": 1,
+                        "total_locations": 1
+                    }
+                    enriched_strikes.append(enriched_strike)
         
         return enriched_strikes
     
@@ -100,6 +152,8 @@ def get_all_csv_columns(all_strikes: List[Dict[str, Any]]) -> List[str]:
         "location_txt",
         "location_official",
         "location_geonames_id",
+        "location_index",
+        "total_locations",
         "strike_status",
         "description_en"
     ]
@@ -161,6 +215,7 @@ def main():
         print("- Processes all JSON files in the input folder")
         print("- Adds publication_date as a column for each strike record")
         print("- Includes source file information for traceability")
+        print("- Handles location lists by creating separate rows for each location")
         print("- Handles missing fields gracefully")
         print("- Orders columns logically for analysis")
         sys.exit(1)
