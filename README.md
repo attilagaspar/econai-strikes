@@ -284,6 +284,19 @@ This pipeline was developed for analyzing historical labor movements in early 20
 
 This project is open source. Please check with the repository owner for specific licensing terms.
 
+## 📋 Documentation
+
+### Project Overview (PDF)
+
+A comprehensive overview of the Népszava Strike project is available in PDF format: **`digitization_pipeline_description.pdf`**
+
+This document provides:
+- **Project background** and research objectives
+- **Methodology** for historical strike data extraction
+- **Technical architecture** and pipeline design
+
+The PDF serves as both a technical documentation and research paper, detailing how AI-powered text analysis can be applied to digitize and structure historical labor movement data from early 20th century Hungarian newspapers.
+
 ## 🔗 Related Projects
 
 - [Model Context Protocol](https://github.com/modelcontextprotocol) - For advanced AI-powered data processing
